@@ -1,0 +1,54 @@
+name: Build iOS IPA (LTE Ping Scanner)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Verify Bundle ID and App Group
+        run: |
+          grep -q 'app.aries712.garlic3686' PingScanner.xcodeproj/project.pbxproj
+          grep -q 'group.27d6c67cc354451e.4' PingScanner/PingScanner.entitlements
+
+      - name: Build unsigned IPA
+        run: |
+          xcodebuild -project PingScanner.xcodeproj \
+            -scheme PingScanner \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM=""
+
+          APP=$(find build -name "PingScanner.app" -type d | head -n 1)
+          if [ -z "$APP" ]; then
+            echo "::error::PingScanner.app not found"
+            find build -name "*.app" -type d
+            exit 1
+          fi
+
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -r PingScanner.ipa Payload
+          rm -rf Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: lte-ping-scanner-unsigned-ipa
+          path: PingScanner.ipa
