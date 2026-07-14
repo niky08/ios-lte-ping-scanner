@@ -7,7 +7,7 @@ struct ContentView: View {
         NavigationStack {
             Form {
                 Section("Диапазон") {
-                    TextField("111.88.x.x", text: $vm.pattern)
+                    TextField("111.88.1.x", text: $vm.pattern)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                     Text("x = 1…255. Пример: 111.88.1.x (~254 IP) или 111.88.x.x (~65k, долго)")

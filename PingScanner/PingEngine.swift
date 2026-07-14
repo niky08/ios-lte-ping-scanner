@@ -15,7 +15,7 @@ struct PingResult: Identifiable, Hashable {
 
 @MainActor
 final class PingScannerViewModel: NSObject, ObservableObject {
-    @Published var pattern: String = "111.88.x.x"
+    @Published var pattern: String = "111.88.1.x"
     @Published var settings = PingSettings()
     @Published var isScanning = false
     @Published var progress: Double = 0
@@ -124,6 +124,8 @@ final class PingScannerViewModel: NSObject, ObservableObject {
 
     private func ping(ip: String, timeout: TimeInterval) async -> PingResult? {
         await withCheckedContinuation { continuation in
+            let gate = PingResumeGate(continuation: continuation)
+
             let pinger = SingleShotPinger(
                 host: ip,
                 ttl: settings.ttl,
@@ -131,13 +133,37 @@ final class PingScannerViewModel: NSObject, ObservableObject {
                 timeout: timeout
             ) { latencyMs in
                 if let latencyMs {
-                    continuation.resume(returning: PingResult(ip: ip, latencyMs: latencyMs))
+                    gate.resume(returning: PingResult(ip: ip, latencyMs: latencyMs))
                 } else {
-                    continuation.resume(returning: nil)
+                    gate.resume(returning: nil)
                 }
             }
             pinger.start()
+
+            // Страховка: если делегат/таймер потерялись — не зависаем на 0/N
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout + 1.0) {
+                gate.resume(returning: nil)
+            }
         }
+    }
+}
+
+/// Гарантирует единственный resume continuation (thread-safe).
+private final class PingResumeGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var done = false
+    private let continuation: CheckedContinuation<PingResult?, Never>
+
+    init(continuation: CheckedContinuation<PingResult?, Never>) {
+        self.continuation = continuation
+    }
+
+    func resume(returning value: PingResult?) {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !done else { return }
+        done = true
+        continuation.resume(returning: value)
     }
 }
 
@@ -151,6 +177,8 @@ private final class SingleShotPinger: NSObject, SimplePingDelegate {
     private var startedAt: Date?
     private var finished = false
     private var timeoutWork: DispatchWorkItem?
+    /// Удерживаем себя до finish — иначе делегат умирает и скан залипает на 0/N
+    private var selfRetain: SingleShotPinger?
 
     init(host: String, ttl: UInt, payloadSize: UInt, timeout: TimeInterval, completion: @escaping (Double?) -> Void) {
         self.host = host
@@ -161,6 +189,7 @@ private final class SingleShotPinger: NSObject, SimplePingDelegate {
     }
 
     func start() {
+        selfRetain = self
         let p = SimplePing(hostName: host)
         p.delegate = self
         p.ttl = ttl
@@ -176,6 +205,7 @@ private final class SingleShotPinger: NSObject, SimplePingDelegate {
         ping?.stop()
         ping = nil
         completion(ms)
+        selfRetain = nil
     }
 
     func simplePing(_ pinger: Any, didStartWithAddress address: Data) {

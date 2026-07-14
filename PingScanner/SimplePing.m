@@ -47,7 +47,7 @@ static const uint16_t kICMPTypeEchoReply = 0;
     int err = getaddrinfo(self.hostName.UTF8String, NULL, &hints, &res);
     if (err != 0 || res == NULL) {
         NSError *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:err userInfo:@{NSLocalizedDescriptionKey: @"DNS resolve failed"}];
-        [self.delegate simplePing:self didFailWithError:error];
+        [self notifyFailure:error];
         return;
     }
 
@@ -61,14 +61,14 @@ static const uint16_t kICMPTypeEchoReply = 0;
 
     if (self.hostAddress == nil) {
         NSError *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:EINVAL userInfo:@{NSLocalizedDescriptionKey: @"No IPv4 address"}];
-        [self.delegate simplePing:self didFailWithError:error];
+        [self notifyFailure:error];
         return;
     }
 
     self.socketFD = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
     if (self.socketFD < 0) {
         NSError *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{NSLocalizedDescriptionKey: @"ICMP socket failed"}];
-        [self.delegate simplePing:self didFailWithError:error];
+        [self notifyFailure:error];
         return;
     }
 
@@ -79,9 +79,23 @@ static const uint16_t kICMPTypeEchoReply = 0;
         [self readLoop];
     });
 
-    if ([self.delegate respondsToSelector:@selector(simplePing:didStartWithAddress:)]) {
-        [self.delegate simplePing:self didStartWithAddress:self.hostAddress];
-    }
+    [self notifyStart];
+}
+
+- (void)notifyStart {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if ([self.delegate respondsToSelector:@selector(simplePing:didStartWithAddress:)]) {
+            [self.delegate simplePing:self didStartWithAddress:self.hostAddress];
+        }
+    });
+}
+
+- (void)notifyFailure:(NSError *)error {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if ([self.delegate respondsToSelector:@selector(simplePing:didFailWithError:)]) {
+            [self.delegate simplePing:self didFailWithError:error];
+        }
+    });
 }
 
 - (void)stop {
