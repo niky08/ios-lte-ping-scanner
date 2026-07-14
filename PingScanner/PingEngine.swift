@@ -161,7 +161,7 @@ private final class SingleShotPinger: NSObject, SimplePingDelegate {
     }
 
     func start() {
-        let p = SimplePing.ping(withHostName: host)
+        let p = SimplePing(hostName: host)
         p.delegate = self
         p.ttl = ttl
         p.payloadSize = payloadSize
@@ -178,9 +178,9 @@ private final class SingleShotPinger: NSObject, SimplePingDelegate {
         completion(ms)
     }
 
-    func simplePing(_ pinger: SimplePing, didStartWithAddress address: Data) {
+    func simplePing(_ pinger: Any, didStartWithAddress address: Data) {
         startedAt = Date()
-        pinger.sendPing()
+        (pinger as? SimplePing)?.send()
 
         let work = DispatchWorkItem { [weak self] in
             self?.finish(nil)
@@ -189,15 +189,15 @@ private final class SingleShotPinger: NSObject, SimplePingDelegate {
         DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: work)
     }
 
-    func simplePing(_ pinger: SimplePing, didFailWithError error: Error) {
+    func simplePing(_ pinger: Any, didFailWithError error: Error) {
         finish(nil)
     }
 
-    func simplePing(_ pinger: SimplePing, didFailToSendPacket packet: Data, sequenceNumber: UInt16, error: Error) {
+    func simplePing(_ pinger: Any, didFailToSendPacket packet: Data, sequenceNumber: UInt16, error: Error) {
         finish(nil)
     }
 
-    func simplePing(_ pinger: SimplePing, didReceivePingResponsePacket packet: Data, sequenceNumber: UInt16) {
+    func simplePing(_ pinger: Any, didReceivePingResponsePacket packet: Data, sequenceNumber: UInt16) {
         let ms: Double
         if let startedAt {
             ms = Date().timeIntervalSince(startedAt) * 1000.0

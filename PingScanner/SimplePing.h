@@ -19,10 +19,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) NSUInteger ttl;
 @property (nonatomic, assign) NSUInteger payloadSize;
 
-+ (instancetype)pingWithHostName:(NSString *)hostName;
++ (instancetype)pingWithHostName:(NSString *)hostName NS_SWIFT_NAME(init(hostName:));
 - (void)start;
 - (void)stop;
-- (void)sendPing;
+- (void)sendPing NS_SWIFT_NAME(send());
 
 @end
 
