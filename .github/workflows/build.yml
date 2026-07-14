@@ -2,9 +2,16 @@ name: Build iOS IPA (LTE Ping Scanner)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
+
+concurrency:
+  group: ios-lte-ping-scanner-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -18,13 +25,22 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Verify Bundle ID and App Group
+      - name: Print build info
+        run: |
+          xcodebuild -version
+          echo "Bundle ID: app.aries712.garlic3686"
+          echo "App Group: group.27d6c67cc354451e.4"
+          echo "Commit: ${{ github.sha }}"
+
+      - name: Verify identifiers
         run: |
           grep -q 'app.aries712.garlic3686' PingScanner.xcodeproj/project.pbxproj
           grep -q 'group.27d6c67cc354451e.4' PingScanner/PingScanner.entitlements
 
       - name: Build unsigned IPA
         run: |
+          set -euo pipefail
+
           xcodebuild -project PingScanner.xcodeproj \
             -scheme PingScanner \
             -configuration Release \
@@ -33,22 +49,34 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            DEVELOPMENT_TEAM=""
+            DEVELOPMENT_TEAM="" \
+            | tee xcodebuild.log
 
           APP=$(find build -name "PingScanner.app" -type d | head -n 1)
           if [ -z "$APP" ]; then
             echo "::error::PingScanner.app not found"
-            find build -name "*.app" -type d
+            find build -name "*.app" -type d || true
             exit 1
           fi
 
+          echo "Built: $APP"
           mkdir -p Payload
           cp -R "$APP" Payload/
           zip -r PingScanner.ipa Payload
           rm -rf Payload
+          ls -lh PingScanner.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: lte-ping-scanner-unsigned-ipa
           path: PingScanner.ipa
+          retention-days: 30
+
+      - name: Upload xcodebuild log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log
+          retention-days: 7
