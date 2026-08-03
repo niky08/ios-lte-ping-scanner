@@ -12,6 +12,13 @@
 		A10000000000000000000003 /* PingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* PingEngine.swift */; };
 		A10000000000000000000004 /* RangeParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* RangeParser.swift */; };
 		A10000000000000000000005 /* SimplePing.m in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* SimplePing.m */; };
+		A10000000000000000000006 /* L3TargetModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* L3TargetModels.swift */; };
+		A10000000000000000000007 /* L3TargetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* L3TargetStore.swift */; };
+		A10000000000000000000008 /* TCPProbeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* TCPProbeEngine.swift */; };
+		A10000000000000000000009 /* L3ScanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* L3ScanViewModel.swift */; };
+		A10000000000000000000010 /* L3PoolScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* L3PoolScanView.swift */; };
+		A10000000000000000000011 /* ICMPRangeScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* ICMPRangeScanView.swift */; };
+		A10000000000000000000012 /* l3_master_targets.json in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* l3_master_targets.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +31,13 @@
 		A20000000000000000000007 /* PingScanner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "PingScanner-Bridging-Header.h"; sourceTree = "<group>"; };
 		A20000000000000000000008 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000009 /* PingScanner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PingScanner.entitlements; sourceTree = "<group>"; };
+		A20000000000000000000010 /* L3TargetModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L3TargetModels.swift; sourceTree = "<group>"; };
+		A20000000000000000000011 /* L3TargetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L3TargetStore.swift; sourceTree = "<group>"; };
+		A20000000000000000000012 /* TCPProbeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TCPProbeEngine.swift; sourceTree = "<group>"; };
+		A20000000000000000000013 /* L3ScanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L3ScanViewModel.swift; sourceTree = "<group>"; };
+		A20000000000000000000014 /* L3PoolScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L3PoolScanView.swift; sourceTree = "<group>"; };
+		A20000000000000000000015 /* ICMPRangeScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICMPRangeScanView.swift; sourceTree = "<group>"; };
+		A20000000000000000000016 /* l3_master_targets.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = l3_master_targets.json; sourceTree = "<group>"; };
 		A30000000000000000000001 /* PingScanner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PingScanner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -51,8 +65,15 @@
 			children = (
 				A20000000000000000000001 /* PingScannerApp.swift */,
 				A20000000000000000000002 /* ContentView.swift */,
+				A20000000000000000000014 /* L3PoolScanView.swift */,
+				A20000000000000000000015 /* ICMPRangeScanView.swift */,
+				A20000000000000000000013 /* L3ScanViewModel.swift */,
+				A20000000000000000000010 /* L3TargetModels.swift */,
+				A20000000000000000000011 /* L3TargetStore.swift */,
+				A20000000000000000000012 /* TCPProbeEngine.swift */,
 				A20000000000000000000003 /* PingEngine.swift */,
 				A20000000000000000000004 /* RangeParser.swift */,
+				A50000000000000000000004 /* Resources */,
 				A20000000000000000000006 /* SimplePing.h */,
 				A20000000000000000000005 /* SimplePing.m */,
 				A20000000000000000000007 /* PingScanner-Bridging-Header.h */,
@@ -60,6 +81,14 @@
 				A20000000000000000000009 /* PingScanner.entitlements */,
 			);
 			path = PingScanner;
+			sourceTree = "<group>";
+		};
+		A50000000000000000000004 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000016 /* l3_master_targets.json */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		A50000000000000000000003 /* Products */ = {
@@ -124,6 +153,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000000000000000000012 /* l3_master_targets.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -139,6 +169,12 @@
 				A10000000000000000000003 /* PingEngine.swift in Sources */,
 				A10000000000000000000004 /* RangeParser.swift in Sources */,
 				A10000000000000000000005 /* SimplePing.m in Sources */,
+				A10000000000000000000006 /* L3TargetModels.swift in Sources */,
+				A10000000000000000000007 /* L3TargetStore.swift in Sources */,
+				A10000000000000000000008 /* TCPProbeEngine.swift in Sources */,
+				A10000000000000000000009 /* L3ScanViewModel.swift in Sources */,
+				A10000000000000000000010 /* L3PoolScanView.swift in Sources */,
+				A10000000000000000000011 /* ICMPRangeScanView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

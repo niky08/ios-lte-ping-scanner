@@ -1,54 +1,58 @@
-# LTE Ping Scanner (iOS, 2026)
+# LTE L3 Scanner (iOS)
 
-Проверка доступности IP-диапазонов по ICMP на LTE (какие подсети разрешены оператором на L3).
+Проверка L3-доступности на **LTE** (что реально не режет оператор).
 
-**Сборка только через GitHub Actions** — локальный Xcode не нужен.
+Два режима:
+
+1. **WL+EU TCP** — база из архивов сервера (`l3_master_targets.json`)
+   - **Этап 1:** TCP к каждому уникальному `host` / `domain` (порт по умолчанию 443)
+   - **Этап 2:** TCP к `host:port` каждого тега, прошедшего этап 1
+   - **Экспорт JSON** — отдать на сервер для HEAD probe
+2. **ICMP диапазон** — старый режим `111.88.1.x`
+
+## База целей
+
+Сервер: `/opt/vpn-master/scripts/extract_l3_targets.py`
+
+```bash
+python3 /opt/vpn-master/scripts/extract_l3_targets.py \
+  -o /opt/vpn-master/data/l3_master_targets.json
+```
+
+Сейчас в базе (из 105 архивов WL+EU):
+
+| | |
+|---|---|
+| Endpoint (tag+host+port) | ~54 833 |
+| Уникальных host/domain | ~5 571 |
+| Уникальных host:port | ~6 219 |
+
+Файл в приложении: `PingScanner/Resources/l3_master_targets.json` (можно обновить импортом).
+
+## Сборка IPA (GitHub Actions)
+
+1. https://github.com/niky08/ios-lte-ping-scanner/actions
+2. **Build iOS IPA** → Run workflow
+3. Artifacts → `PingScanner.ipa`
+
+Сканируйте на **реальном iPhone + LTE**, не Wi‑Fi.
+
+## Экспорт для сервера
+
+После этапа 2 → **Экспорт JSON**. Формат:
+
+```json
+{
+  "alive_hosts": [{"host":"1.2.3.4","port":443,"latencyMs":42}],
+  "alive_endpoints": [{"tag":"wl-…","host":"…","port":443,"latencyMs":55,"source":"wl"}]
+}
+```
+
+Этот файл — whitelist для L3; дальше на сервере HEAD probe только по `alive_endpoints`.
 
 ## Идентификаторы
 
-| Параметр | Значение |
-|----------|----------|
+| | |
+|---|---|
 | Bundle ID | `app.aries712.garlic3686` |
 | App Group | `group.27d6c67cc354451e.4` |
-
-## Сборка (GitHub Actions)
-
-1. Откройте https://github.com/niky08/ios-lte-ping-scanner/actions
-2. **Build iOS IPA (LTE Ping Scanner)** → **Run workflow** → **Run workflow**
-3. Дождитесь зелёного статуса (~3–5 мин)
-4. Внизу run → **Artifacts** → скачайте `lte-ping-scanner-unsigned-ipa` (файл `PingScanner.ipa`)
-
-Сборка также запускается автоматически при каждом push в `main`.
-
-### Установка на iPhone
-
-IPA из CI **не подписан**. Установите через свой инструмент:
-
-- AltStore / Sideloadly / любой sideload с вашим Apple ID
-- Bundle ID уже `app.aries712.garlic3686` — должен совпадать с профилем, если переиспользуете тот же ID
-
-ICMP работает **только на реальном iPhone**, не в Simulator. Сканируйте на **LTE**, не Wi‑Fi.
-
-## Использование
-
-- Маска: `111.88.x.x`, `111.88.1.x` или диапазон `111.88.1.1-111.88.1.50`
-- **Сканировать** — параллельный ICMP ping
-- **Ответил** = хост/подсеть доступна на L3
-- **Нет ответа** = вероятно заблокировано оператором (или хост молчит)
-- **Экспорт** — список ответивших IP
-
-## Настройки ping (по умолчанию)
-
-| Параметр | Значение | Комментарий |
-|----------|----------|-------------|
-| TTL | 64 | Стандарт |
-| Timeout | **150 ms** | 100 ms даёт ложные «мёртвые» при RTT 30–50 ms на LTE |
-| Packet size | 56 B | Достаточно для ICMP echo |
-| Параллельно | 48 | Быстрее последовательного interval 0.1 |
-
-Первый прогон: **`111.88.1.x`** (~254 IP), не весь `/16` (~65k).
-
-## Ограничения
-
-- Оператор может фильтровать ICMP — «нет ответа» ≠ всегда блок L3
-- Большие диапазоны долго грузят CPU и радиомодуль
