@@ -12,7 +12,7 @@ struct L3PoolScanView: View {
             Section("База WL+EU") {
                 if let file = vm.masterFile {
                     Text("Endpoint: \(file.targets.count)")
-                    Text("Уникальных host: \(L3TargetStore.uniqueHosts(from: file).count)")
+                    Text("Уникальных host/domain: \(L3TargetStore.uniqueHosts(from: file).count)")
                     if let at = file.generatedAt {
                         Text("Собрано: \(at)").font(.caption).foregroundStyle(.secondary)
                     }
@@ -21,14 +21,21 @@ struct L3PoolScanView: View {
             }
             .listRowBackground(Color.oledRow)
 
-            Section("TCP") {
-                Stepper("Timeout: \(vm.settings.timeoutMs) ms", value: $vm.settings.timeoutMs, in: 300...3000, step: 100)
-                Stepper("Параллельно: \(vm.settings.maxParallel)", value: $vm.settings.maxParallel, in: 8...128, step: 8)
-                Stepper("Этап 1 порт: \(vm.settings.stage1Port)", value: Binding(
-                    get: { Int(vm.settings.stage1Port) },
-                    set: { vm.settings.stage1Port = UInt16(clamping: $0) }
-                ), in: 1...65535)
-                Text("Этап 1 — TCP к host (domain/IP) на порту выше. Этап 2 — свой port у каждого тега.")
+            Section("Этап 1 — ICMP") {
+                Stepper("TTL: \(vm.settings.icmp.ttl)", value: $vm.settings.icmp.ttl, in: 1...255)
+                Stepper("Timeout: \(vm.settings.icmp.timeoutMs) ms", value: $vm.settings.icmp.timeoutMs, in: 50...1000, step: 10)
+                Stepper("Packet: \(vm.settings.icmp.packetSize) B", value: $vm.settings.icmp.packetSize, in: 32...512, step: 8)
+                Stepper("Параллельно: \(vm.settings.icmp.maxConcurrent)", value: $vm.settings.icmp.maxConcurrent, in: 8...128, step: 8)
+                Text("ICMP к каждому уникальному IP или domain (DNS резолвится автоматически).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .listRowBackground(Color.oledRow)
+
+            Section("Этап 2 — TCP") {
+                Stepper("Timeout: \(vm.settings.tcpTimeoutMs) ms", value: $vm.settings.tcpTimeoutMs, in: 300...3000, step: 100)
+                Stepper("Параллельно: \(vm.settings.tcpParallel)", value: $vm.settings.tcpParallel, in: 8...128, step: 8)
+                Text("TCP connect к host:port из тега — только для host/domain, прошедших ICMP.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -48,14 +55,14 @@ struct L3PoolScanView: View {
 
             Section("Скан") {
                 HStack {
-                    Button(vm.isScanning && vm.stage == .hosts ? "Стоп" : "Этап 1: host") {
-                        vm.isScanning && vm.stage == .hosts ? vm.stopScan() : vm.startStage1()
+                    Button(vm.isScanning && vm.stage == .icmpHosts ? "Стоп" : "Этап 1: ICMP") {
+                        vm.isScanning && vm.stage == .icmpHosts ? vm.stopScan() : vm.startStage1()
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(vm.masterFile == nil)
 
-                    Button(vm.isScanning && vm.stage == .endpoints ? "Стоп" : "Этап 2: port") {
-                        vm.isScanning && vm.stage == .endpoints ? vm.stopScan() : vm.startStage2()
+                    Button(vm.isScanning && vm.stage == .tcpEndpoints ? "Стоп" : "Этап 2: TCP") {
+                        vm.isScanning && vm.stage == .tcpEndpoints ? vm.stopScan() : vm.startStage2()
                     }
                     .buttonStyle(.bordered)
                     .disabled(vm.masterFile == nil || vm.aliveHosts.isEmpty)
@@ -76,7 +83,7 @@ struct L3PoolScanView: View {
             }
             .listRowBackground(Color.oledRow)
 
-            Section("Host этап 1 (\(vm.aliveHosts.count))") {
+            Section("ICMP этап 1 (\(vm.aliveHosts.count))") {
                 if vm.aliveHosts.isEmpty {
                     Text("Пусто").foregroundStyle(.secondary)
                 } else {
@@ -94,7 +101,7 @@ struct L3PoolScanView: View {
             }
             .listRowBackground(Color.oledRow)
 
-            Section("Endpoint этап 2 (\(vm.aliveEndpoints.count))") {
+            Section("TCP этап 2 (\(vm.aliveEndpoints.count))") {
                 if vm.aliveEndpoints.isEmpty {
                     Text("Пусто").foregroundStyle(.secondary)
                 } else {
@@ -133,12 +140,4 @@ struct L3PoolScanView: View {
 private extension Color {
     static let oledRow = Color(red: 0.11, green: 0.11, blue: 0.12)
     static let oledBlack = Color(red: 0, green: 0, blue: 0)
-}
-
-private extension UInt16 {
-    init(clamping value: Int) {
-        if value <= 0 { self = 1 }
-        else if value > Int(UInt16.max) { self = UInt16.max }
-        else { self = UInt16(value) }
-    }
 }

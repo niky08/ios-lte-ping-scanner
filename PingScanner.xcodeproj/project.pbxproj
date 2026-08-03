@@ -19,6 +19,7 @@
 		A10000000000000000000010 /* L3PoolScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* L3PoolScanView.swift */; };
 		A10000000000000000000011 /* ICMPRangeScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* ICMPRangeScanView.swift */; };
 		A10000000000000000000012 /* l3_master_targets.json in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* l3_master_targets.json */; };
+		A10000000000000000000013 /* ICMPProbeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* ICMPProbeEngine.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +39,7 @@
 		A20000000000000000000014 /* L3PoolScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L3PoolScanView.swift; sourceTree = "<group>"; };
 		A20000000000000000000015 /* ICMPRangeScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICMPRangeScanView.swift; sourceTree = "<group>"; };
 		A20000000000000000000016 /* l3_master_targets.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = l3_master_targets.json; sourceTree = "<group>"; };
+		A20000000000000000000017 /* ICMPProbeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICMPProbeEngine.swift; sourceTree = "<group>"; };
 		A30000000000000000000001 /* PingScanner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PingScanner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -71,6 +73,7 @@
 				A20000000000000000000010 /* L3TargetModels.swift */,
 				A20000000000000000000011 /* L3TargetStore.swift */,
 				A20000000000000000000012 /* TCPProbeEngine.swift */,
+				A20000000000000000000017 /* ICMPProbeEngine.swift */,
 				A20000000000000000000003 /* PingEngine.swift */,
 				A20000000000000000000004 /* RangeParser.swift */,
 				A50000000000000000000004 /* Resources */,
@@ -175,6 +178,7 @@
 				A10000000000000000000009 /* L3ScanViewModel.swift in Sources */,
 				A10000000000000000000010 /* L3PoolScanView.swift in Sources */,
 				A10000000000000000000011 /* ICMPRangeScanView.swift in Sources */,
+				A10000000000000000000013 /* ICMPProbeEngine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

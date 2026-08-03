@@ -58,7 +58,7 @@ struct L3ScanExport: Codable {
     var version: Int = 1
     var scannedAt: String
     var network: String
-    var stage1DefaultPort: Int
+    var stage1Method: String
     var aliveHosts: [L3HostProbeResult.ExportRow]
     var aliveEndpoints: [L3EndpointProbeResult.ExportRow]
 
@@ -74,12 +74,12 @@ struct L3ScanExport: Codable {
 extension L3HostProbeResult {
     struct ExportRow: Codable, Hashable {
         var host: String
-        var port: Int
         var latencyMs: Int
+        var method: String
     }
 
     var exportRow: ExportRow {
-        ExportRow(host: host, port: Int(port), latencyMs: Int(latencyMs))
+        ExportRow(host: host, latencyMs: Int(latencyMs), method: "icmp")
     }
 }
 

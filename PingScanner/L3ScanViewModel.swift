@@ -1,16 +1,16 @@
 import Foundation
 import SwiftUI
 
-struct TCPScanSettings {
-    var timeoutMs: Int = 1200
-    var maxParallel: Int = 64
-    var stage1Port: UInt16 = 443
+struct L3ScanSettings {
+    var icmp = PingSettings()
+    var tcpTimeoutMs: Int = 1200
+    var tcpParallel: Int = 64
 }
 
 @MainActor
 final class L3ScanViewModel: ObservableObject {
     @Published var masterFile: L3MasterFile?
-    @Published var settings = TCPScanSettings()
+    @Published var settings = L3ScanSettings()
     @Published var isScanning = false
     @Published var stage: ScanStage = .idle
     @Published var progress: Double = 0
@@ -26,8 +26,8 @@ final class L3ScanViewModel: ObservableObject {
 
     enum ScanStage: String {
         case idle
-        case hosts
-        case endpoints
+        case icmpHosts
+        case tcpEndpoints
         case done
     }
 
@@ -61,27 +61,24 @@ final class L3ScanViewModel: ObservableObject {
         masterFile = file
         sourceByTag = Dictionary(uniqueKeysWithValues: file.targets.map { ($0.tag, $0) })
         let hostCount = L3TargetStore.uniqueHosts(from: file).count
-        statusText = "Готов: \(file.targets.count) endpoint, \(hostCount) host"
+        statusText = "Готов: \(file.targets.count) endpoint, \(hostCount) host/domain"
     }
 
     func startStage1() {
         guard let masterFile else { return }
         let hosts = L3TargetStore.uniqueHosts(from: masterFile)
-        startScan(stage: .hosts, total: hosts.count) {
+        startScan(stage: .icmpHosts, total: hosts.count) {
             self.aliveHosts = []
-            let timeout = TimeInterval(self.settings.timeoutMs) / 1000.0
-            self.aliveHosts = await TCPProbeEngine.scanHosts(
+            self.aliveHosts = await ICMPProbeEngine.scanHosts(
                 hosts: hosts,
-                port: self.settings.stage1Port,
-                timeout: timeout,
-                maxParallel: self.settings.maxParallel
+                settings: self.settings.icmp
             ) { done, total in
                 self.scannedCount = done
                 self.totalCount = total
                 self.progress = total == 0 ? 0 : Double(done) / Double(total)
             }
             self.stage = .done
-            self.statusText = "Этап 1: ответили \(self.aliveHosts.count) host на :\(self.settings.stage1Port)"
+            self.statusText = "Этап 1 ICMP: ответили \(self.aliveHosts.count) host/domain"
         }
     }
 
@@ -89,24 +86,24 @@ final class L3ScanViewModel: ObservableObject {
         guard let masterFile else { return }
         let alive = Set(aliveHosts.map { $0.host.lowercased() })
         guard !alive.isEmpty else {
-            errorText = "Сначала этап 1 — нужен список живых host"
+            errorText = "Сначала этап 1 — нужен список host/domain после ICMP"
             return
         }
         let targets = L3TargetStore.targets(from: masterFile, aliveHosts: alive)
-        startScan(stage: .endpoints, total: targets.count) {
+        startScan(stage: .tcpEndpoints, total: targets.count) {
             self.aliveEndpoints = []
-            let timeout = TimeInterval(self.settings.timeoutMs) / 1000.0
+            let timeout = TimeInterval(self.settings.tcpTimeoutMs) / 1000.0
             self.aliveEndpoints = await TCPProbeEngine.scanEndpoints(
                 targets: targets,
                 timeout: timeout,
-                maxParallel: self.settings.maxParallel
+                maxParallel: self.settings.tcpParallel
             ) { done, total in
                 self.scannedCount = done
                 self.totalCount = total
                 self.progress = total == 0 ? 0 : Double(done) / Double(total)
             }
             self.stage = .done
-            self.statusText = "Этап 2: ответили \(self.aliveEndpoints.count) endpoint"
+            self.statusText = "Этап 2 TCP: ответили \(self.aliveEndpoints.count) endpoint"
         }
     }
 
@@ -122,7 +119,7 @@ final class L3ScanViewModel: ObservableObject {
         return L3ScanExport(
             scannedAt: ISO8601DateFormatter().string(from: Date()),
             network: "lte",
-            stage1DefaultPort: Int(settings.stage1Port),
+            stage1Method: "icmp",
             aliveHosts: aliveHosts.map(\.exportRow),
             aliveEndpoints: aliveEndpoints.map { row in
                 row.exportRow(source: sourceByTag[row.tag]?.source)
@@ -147,7 +144,9 @@ final class L3ScanViewModel: ObservableObject {
         scannedCount = 0
         totalCount = total
         progress = 0
-        statusText = stage == .hosts ? "Этап 1: TCP host..." : "Этап 2: TCP host:port..."
+        statusText = stage == .icmpHosts
+            ? "Этап 1: ICMP host/domain..."
+            : "Этап 2: TCP host:port..."
 
         scanTask?.cancel()
         scanTask = Task {
